@@ -1,0 +1,12 @@
+langchain>=1.5.2
+langchain-core>=1.8.4
+langchain-google-genai>=4.5.2
+langchain-postgres>=0.0.19
+langgraph>=1.2.24
+pgvector>=0.3.6
+psycopg[binary]>=3.3.9
+pydantic>=2.14.4
+pydantic-settings>=2.16.3
+pypdf>=7.1.1
+python-dotenv>=1.2.4
+tenacity>=9.1.4
