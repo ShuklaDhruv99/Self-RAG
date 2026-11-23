@@ -8,7 +8,7 @@ ENV_FILE = PROJECT_ROOT / ".env"
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=ENV_FILE, extra="ignore")
 
-    gemini_api_key: str
+    google_api_key: str
     gemini_model: str
     database_url: str
 
@@ -20,8 +20,8 @@ class Settings(BaseSettings):
     collection_name: str = "docs"
 
     # Chunking
-    chunk_size: int = 1000
-    chunk_overlap: int = 150
+    chunk_size: int = 400
+    chunk_overlap: int = 60
 
     # Retrieval
     top_k: int = 4

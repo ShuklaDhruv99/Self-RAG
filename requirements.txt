@@ -1,5 +1,6 @@
 langchain>=1.5.2
 langchain-core>=1.8.4
+langchain-community>=0.4.2
 langchain-google-genai>=4.5.2
 langchain-postgres>=0.0.19
 langgraph>=1.2.24
