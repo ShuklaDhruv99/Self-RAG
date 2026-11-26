@@ -28,6 +28,12 @@ class SupportGrade(BaseModel):
                     "no_support: the key claims are not in the context."
     )
 
+UseLabel = Literal['useful', 'not_useful']
+
 class UsefulnessGrade(BaseModel):
     reason: str = Field(..., description="Short reason in 1 line.")
-    is_use: Literal["useful", "not_useful"]
+    is_use: UseLabel = Field(
+        ...,
+        description="useful: the answer directly and specifically addresses the question and gives the user what they asked for. "
+                    "not_useful: the answer is off-topic, vague, evasive, only repeats the question, answers a different question, or says it does not know. "
+    )

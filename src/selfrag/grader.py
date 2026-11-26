@@ -2,7 +2,7 @@ import logging
 
 from langchain_core.documents import Document
 from langchain_core.prompts import ChatPromptTemplate
-from selfrag.schemas import RetrieveDecision, RelevanceGrade, SupportGrade, SupportLabel
+from selfrag.schemas import RetrieveDecision, RelevanceGrade, SupportGrade, SupportLabel, UsefulnessGrade, UseLabel
 from selfrag.llm import get_llm, invoke_with_retry
 
 logger = logging.getLogger(__name__)
@@ -81,6 +81,36 @@ IS_SUP_PROMPT = ChatPromptTemplate.from_messages(
     ]
 )
 
+IS_USE_PROMPT = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            "You judge whether an ANSWER is useful for the QUESTION.\n"
+            "is_use must be one of: useful, not_useful.\n\n"
+            "Judge only whether the answer addresses what the question asks. "
+            "Do NOT judge whether it is factually correct or supported by documents; "
+            "that is checked separately.\n\n"
+            "- useful: the answer directly and specifically addresses the question and gives "
+            "the user what they asked for.\n"
+            "- not_useful: the answer is off-topic, vague, evasive, only repeats the question, "
+            "answers a different question, or says it does not know.\n\n"
+            "Examples:\n"
+            "- Question: 'How much does the Growth plan cost per user per month?' / "
+            "Answer: 'The Growth plan costs INR 5,999 per user per month.' -> useful.\n"
+            "- Question: 'How much does the Growth plan cost per user per month?' / "
+            "Answer: 'The Growth plan is best suited for growing teams.' -> not_useful "
+            "(does not give the price).\n"
+            "- Question: 'Does NexaChat integrate with Telegram?' / "
+            "Answer: 'NexaChat is an internal knowledge assistant.' -> not_useful "
+            "(does not answer the question).\n"
+            "- Question: 'Does NexaAI offer a free trial?' / "
+            "Answer: 'I don't know.' -> not_useful.\n\n"
+            "Give a one-line reason first, then the verdict."
+        ),
+        ("human", "Question:\n{question}\n\nAnswer:\n{answer}"),
+    ]
+)
+
 def should_retrieve(question: str) -> bool:
     try:
         chain = RETRIEVE_PROMPT | get_llm().with_structured_output(RetrieveDecision)
@@ -108,12 +138,22 @@ def is_sup(question: str, answer: str, context: str) -> SupportLabel:
         logger.exception("is_sup failed, defaulting to no_support")
         return "no_support"
 
+def is_use(question: str, answer: str) -> UseLabel:
+    try:
+        chain = IS_USE_PROMPT | get_llm().with_structured_output(UsefulnessGrade)
+        decision: UsefulnessGrade = invoke_with_retry(chain, {'question': question, 'answer': answer})
+        return decision.is_use
+    except Exception:
+        logger.exception("is_use failed, defaulting to not_useful")
+        return "not_useful"
+
 if __name__ == '__main__':
     from selfrag.logging_setup import setup_logging
-    from selfrag.vectorstore import get_vectorstore
 
     setup_logging()
-    store = get_vectorstore()
-    question = "Which plan includes NexaSupport?"
-    for doc, _ in store.similarity_search_with_score(question, k=4):
-        print(f"p{doc.metadata['page']} relevant={is_relevant(question, doc)}  {doc.page_content[:70]!r}")
+
+    question = "How much does the Growth plan cost per user per month?"
+
+    result = is_use(question=question, answer="The Growth plan is best suited for growing teams.")
+
+    print("OK" if result == 'useful' else "Fail")
