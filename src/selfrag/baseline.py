@@ -9,6 +9,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from selfrag.config import settings
 from selfrag.logging_setup import setup_logging
 from selfrag.retriever import get_retriever
+from selfrag.llm import get_llm, invoke_with_retry
 
 logger = logging.getLogger(__name__)
 
@@ -46,18 +47,10 @@ def format_context(docs: list[Document]):
         parts.append(f"[{i}] ({d.metadata['source']}, p.{d.metadata['page']})\n{d.page_content}")
     return "\n\n".join(parts)
 
-@lru_cache(maxsize=1)
-def get_llm() -> ChatGoogleGenerativeAI:
-    return ChatGoogleGenerativeAI(
-        model=settings.gemini_model,
-        google_api_key=settings.google_api_key,
-        timeout=30,
-        max_retries=2
-    )
 
 def generate(question: str, context: str) -> str:
     chain = PROMPT | get_llm() | StrOutputParser()
-    return chain.invoke({'question':question,'context':context})
+    return invoke_with_retry(chain, {'question':question,'context':context})
 
 def answer(question: str) -> RAGResponse:
     docs = retrieve(question)
