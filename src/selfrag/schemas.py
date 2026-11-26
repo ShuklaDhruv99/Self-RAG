@@ -14,9 +14,19 @@ class RelevanceGrade(BaseModel):
         description="True ONLY if the document contains info that helps answer the question."
     )
 
+SupportLabel = Literal["fully_supported", "partially_supported", "no_support"]
+
 class SupportGrade(BaseModel):
-    evidence: list[str]
-    is_sup: Literal["fully_supported", "partially_supported", "no_support"]
+    evidence: list[str] = Field(
+        default_factory=list,
+        description="Up to 3 short verbatim quotes from the context that support the answer. Empty if none."
+    )
+    is_sup: SupportLabel = Field(
+        ...,
+        description="fully_supported: every claim is stated in the context. "
+                    "partially_supported: core facts are supported but the answer adds a claim or judgment the context does not state. "
+                    "no_support: the key claims are not in the context."
+    )
 
 class UsefulnessGrade(BaseModel):
     reason: str = Field(..., description="Short reason in 1 line.")
