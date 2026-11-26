@@ -1,7 +1,11 @@
+import logging
 from functools import lru_cache
 
 from selfrag.config import settings
+from selfrag.logging_setup import setup_logging
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
+
+logger = logging.getLogger(__name__)
 
 
 @lru_cache(maxsize=1)
@@ -15,4 +19,5 @@ def get_embeddings() -> GoogleGenerativeAIEmbeddings:
 
 if __name__ == '__main__':
     vec = get_embeddings().embed_query('hello')
-    print(len(vec), settings.embedding_dim)
+    setup_logging()
+    logger.info("embedding length %d (expected %d)", len(vec), settings.embedding_dim)

@@ -1,0 +1,15 @@
+[
+  {"id": 1, "question": "How much does the Growth plan cost per user per month?", "expected_answer": "5,999", "page": 3, "answerable": true},
+  {"id": 2, "question": "How many queries per month does the Starter plan allow?", "expected_answer": "Up to 5,000", "page": 3, "answerable": true},
+  {"id": 3, "question": "Which plan includes NexaSupport?", "expected_answer": "Growth (and Enterprise, which includes all products)", "page": 3, "answerable": true},
+  {"id": 4, "question": "What discount does annual billing give?", "expected_answer": "15%", "page": 4, "answerable": true},
+  {"id": 5, "question": "Does NexaChat support role-based access control?", "expected_answer": "Yes (HR, Finance, Sales, Engineering)", "page": 1, "answerable": true},
+  {"id": 6, "question": "What does NexaSupport do when it cannot handle a query confidently?", "expected_answer": "Escalates to a human agent (confidence-based escalation)", "page": 2, "answerable": true},
+  {"id": 7, "question": "Which product provides audit trails and query logging for AI usage?", "expected_answer": "NexaSecure (NexaChat also has audit logs)", "page": 2, "answerable": true},
+  {"id": 8, "question": "Which plan offers on-premise or private cloud deployment, and is it priced per user?", "expected_answer": "Enterprise; custom pricing based on usage and deployment model", "page": 3, "answerable": true},
+  {"id": 9, "question": "Which products can export reports to PDF and Excel?", "expected_answer": "NexaInsight", "page": 1, "answerable": true},
+  {"id": 10, "question": "What support does the Enterprise plan include?", "expected_answer": "24x7 support with SLA, dedicated customer success manager", "page": 3, "answerable": true},
+  {"id": 11, "question": "Does NexaChat integrate with Telegram?", "expected_answer": null, "page": null, "answerable": false},
+  {"id": 12, "question": "What is the Enterprise plan's price per user?", "expected_answer": null, "page": null, "answerable": false},
+  {"id": 13, "question": "Does NexaAI offer a free trial?", "expected_answer": null, "page": null, "answerable": false}
+]

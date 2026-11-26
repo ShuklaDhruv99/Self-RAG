@@ -1,9 +1,14 @@
+import logging
+
 from selfrag.config import settings
+from selfrag.logging_setup import setup_logging
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 from pathlib import Path
 import re
+
+logger = logging.getLogger(__name__)
 
 
 def load_docs(path: str | Path | None = None) -> list[Document]:
@@ -15,6 +20,7 @@ def load_docs(path: str | Path | None = None) -> list[Document]:
 
     for pdf_path in pdf_paths:
         pages = PyPDFLoader(str(pdf_path)).load()
+        logger.info("Loaded %s: %d pages", pdf_path.name, len(pages))
         for page in pages:
             page.page_content = clean_text(page.page_content)
             page.metadata['source'] = pdf_path.name
@@ -45,9 +51,9 @@ def clean_text(text: str) -> str:
 
 
 if __name__ == '__main__':
+    setup_logging(logging.DEBUG)
     docs = load_docs()
     chunks = chunk_docs(docs)
-    print(len(docs), "pages ->", len(chunks), "chunks")
+    logger.info("%d pages -> %d chunks", len(docs), len(chunks))
     for c in chunks[:3]:
-        print(c.metadata, len(c.page_content))
-        print(c.page_content, "\n")
+        logger.debug("%s len=%d\n%s", c.metadata, len(c.page_content), c.page_content)
