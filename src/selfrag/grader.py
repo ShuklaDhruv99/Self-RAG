@@ -2,8 +2,9 @@ import logging
 
 from langchain_core.documents import Document
 from langchain_core.prompts import ChatPromptTemplate
-from selfrag.schemas import RetrieveDecision, RelevanceGrade, SupportGrade, SupportLabel, UsefulnessGrade, UseLabel
+from selfrag.schemas import RetrieveDecision, RelevanceGrade, SupportLabel, SupportGrade, UseLabel, UsefulnessGrade
 from selfrag.llm import get_llm, invoke_with_retry
+from langchain_core.output_parsers import StrOutputParser
 
 logger = logging.getLogger(__name__)
 
@@ -111,6 +112,37 @@ IS_USE_PROMPT = ChatPromptTemplate.from_messages(
     ]
 )
 
+REWRITE_PROMPT = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            "Rewrite the user's QUESTION into a query optimized for vector retrieval over INTERNAL company PDFs.\n\n"
+            "Rules:\n"
+            "- Keep it short (6-16 words) and keep the original meaning.\n"
+            "- Preserve key entities exactly (product names, plan names such as NexaAI, Growth, NexaSupport).\n"
+            "- Remove filler and chatter, fix spelling, and expand vague wording into specific terms "
+            "closely tied to what the question asks.\n"
+            "- Do NOT invent product names, plan names, facts or numbers. Never turn a generic word "
+            "(such as 'teams', 'basic' or 'premium') into a plan or product name; "
+            "use only names that appear in the question.\n"
+            "- Do NOT answer the question.\n"
+            "- If a previous query is given, it did not retrieve useful chunks: write a query with "
+            "different wording or a different angle, not a copy of it.\n"
+            "- Output ONLY the query text, with no quotes, labels or explanation.\n\n"
+            "Examples:\n"
+            "Question: 'what about the pricing thing for teams?'\n"
+            "Query: NexaAI pricing plans price per user per month\n\n"
+            "Question: 'does nexachat do telegram?'\n"
+            "Query: NexaChat Telegram integration supported integrations"
+        ),
+        (
+            "human",
+            "Question:\n{question}\n\n"
+            "Previous query (none if empty):\n{previous_query}"
+        )
+    ]
+)
+
 def should_retrieve(question: str) -> bool:
     try:
         chain = RETRIEVE_PROMPT | get_llm().with_structured_output(RetrieveDecision)
@@ -146,6 +178,15 @@ def is_use(question: str, answer: str) -> UseLabel:
     except Exception:
         logger.exception("is_use failed, defaulting to not_useful")
         return "not_useful"
+
+def rewrite_query(question: str, previous_query: str | None = None) -> str:
+    try:
+        chain = REWRITE_PROMPT | get_llm() | StrOutputParser()
+        rewritten = invoke_with_retry(chain, {'question': question, 'previous_query': previous_query or "none"})
+        return rewritten.strip().strip('"\'') or question
+    except Exception:
+        logger.exception("rewrite_query failed, returning the original question")
+        return question
 
 if __name__ == '__main__':
     from selfrag.logging_setup import setup_logging

@@ -37,3 +37,4 @@ class UsefulnessGrade(BaseModel):
         description="useful: the answer directly and specifically addresses the question and gives the user what they asked for. "
                     "not_useful: the answer is off-topic, vague, evasive, only repeats the question, answers a different question, or says it does not know. "
     )
+

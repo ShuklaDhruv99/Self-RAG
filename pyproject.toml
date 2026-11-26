@@ -9,3 +9,6 @@ requires-python = ">=3.11"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+[tool.pytest.ini_options]
+markers = ["integration: tests that call the live Gemini API"]
+testpaths = ["tests"]
