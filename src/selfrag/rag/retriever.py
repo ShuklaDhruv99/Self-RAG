@@ -1,8 +1,8 @@
 import logging
 
-from selfrag.config import settings
-from selfrag.logging_setup import setup_logging
-from selfrag.vectorstore import get_vectorstore
+from selfrag.core.config import settings
+from selfrag.core.logging import setup_logging
+from selfrag.rag.vectorstore import get_vectorstore
 
 logger = logging.getLogger(__name__)
 

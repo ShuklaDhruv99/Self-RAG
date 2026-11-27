@@ -1,4 +1,4 @@
-from selfrag.baseline import answer, RAGResponse
+from selfrag.rag.baseline import answer, RAGResponse
 import json
 from pathlib import Path
 

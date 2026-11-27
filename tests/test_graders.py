@@ -8,9 +8,14 @@ import pytest
 from langchain_core.documents import Document
 from pydantic import ValidationError
 
-from selfrag import grader
-from selfrag.grader import is_relevant, is_sup, is_use, rewrite_query, should_retrieve
-from selfrag.schemas import (
+import selfrag.bot.nodes.rewrite_question as rewrite_module
+from selfrag.bot.nodes.check_relevance import check_relevance
+from selfrag.bot.nodes.check_support import check_support
+from selfrag.bot.nodes.check_usefulness import check_usefulness
+from selfrag.bot.nodes.decide_retrieval import decide_retrieval
+from selfrag.bot.nodes.rewrite_question import rewrite_question
+from selfrag.bot.state import initial_state
+from selfrag.bot.schemas import (
     RelevanceGrade,
     RetrieveDecision,
     SupportGrade,
@@ -45,6 +50,12 @@ BILLING_CHUNK = Document(
 )
 
 GROWTH_CONTEXT = GROWTH_CHUNK.page_content
+
+
+def state(**changes):
+    s = initial_state(changes.get("question", Q_PRICE))
+    s.update(changes)
+    return s
 
 
 # ---------------------------------------------------------------------------
@@ -98,92 +109,100 @@ def test_usefulness_grade_rejects_unknown_label():
 # ---------------------------------------------------------------------------
 
 @pytest.mark.integration
-def test_should_retrieve_skips_greeting():
-    assert should_retrieve("hi") is False
+def test_decide_retrieval_skips_greeting():
+    assert decide_retrieval(state(question="hi"))["need_retrieval"] is False
 
 
 @pytest.mark.integration
-def test_should_retrieve_for_product_question():
-    assert should_retrieve("How much is the Growth plan?") is True
+def test_decide_retrieval_for_product_question():
+    assert decide_retrieval(state(question="How much is the Growth plan?"))["need_retrieval"] is True
 
 
 @pytest.mark.integration
-def test_is_relevant_yes():
-    assert is_relevant(Q_PRICE, GROWTH_CHUNK) is True
+def test_check_relevance_keeps_relevant_chunk():
+    update = check_relevance(state(question=Q_PRICE, docs=[GROWTH_CHUNK]))
+    assert update["relevant_docs"] == [GROWTH_CHUNK]
 
 
 @pytest.mark.integration
-def test_is_relevant_no():
-    assert is_relevant(Q_PRICE, BILLING_CHUNK) is False
+def test_check_relevance_drops_unrelated_chunk():
+    update = check_relevance(state(question=Q_PRICE, docs=[BILLING_CHUNK]))
+    assert update["relevant_docs"] == []
 
 
 @pytest.mark.integration
-def test_is_sup_fully_supported():
+def test_check_support_fully_supported():
     answer = "The Growth plan costs INR 5,999 per user per month."
-    assert is_sup(Q_PRICE, answer, GROWTH_CONTEXT) == "fully_supported"
+    update = check_support(state(question=Q_PRICE, answer=answer, context=GROWTH_CONTEXT))
+    assert update["issup"] == "fully_supported"
 
 
 @pytest.mark.integration
-def test_is_sup_no_support():
+def test_check_support_no_support():
     answer = "NexaChat integrates with Telegram and Discord."
-    assert is_sup(Q_PRICE, answer, GROWTH_CONTEXT) == "no_support"
+    update = check_support(state(question=Q_PRICE, answer=answer, context=GROWTH_CONTEXT))
+    assert update["issup"] == "no_support"
 
 
 @pytest.mark.integration
-def test_is_use_useful():
+def test_check_usefulness_useful():
     answer = "The Growth plan costs INR 5,999 per user per month."
-    assert is_use(Q_PRICE, answer) == "useful"
+    update = check_usefulness(state(question=Q_PRICE, answer=answer))
+    assert update["isuse"] == "useful"
+    assert update["final_answer"] == answer
 
 
 @pytest.mark.integration
-def test_is_use_not_useful_for_vague_answer():
+def test_check_usefulness_not_useful_for_vague_answer():
     answer = "The Growth plan is best suited for growing teams."
-    assert is_use(Q_PRICE, answer) == "not_useful"
+    assert check_usefulness(state(question=Q_PRICE, answer=answer))["isuse"] == "not_useful"
 
 
 @pytest.mark.integration
-def test_is_use_not_useful_for_dont_know():
-    assert is_use(Q_TRIAL, "I don't know.") == "not_useful"
+def test_check_usefulness_not_useful_for_dont_know():
+    assert check_usefulness(state(question=Q_TRIAL, answer="I don't know."))["isuse"] == "not_useful"
 
 
 # ---------------------------------------------------------------------------
-# rewrite_query
+# rewrite_question
 # ---------------------------------------------------------------------------
 
-def test_rewrite_query_falls_back_to_original_question(monkeypatch):
+def test_rewrite_question_falls_back_to_original_question(monkeypatch):
     """If the LLM call fails, the loop should continue with the original question (no network)."""
     def boom(*args, **kwargs):
         raise RuntimeError("Gemini unavailable")
 
-    monkeypatch.setattr(grader, "invoke_with_retry", boom)
-    assert rewrite_query("what about pricing?") == "what about pricing?"
+    monkeypatch.setattr(rewrite_module, "invoke_with_retry", boom)
+    update = rewrite_question(state(question="what about pricing?", retrieval_query="what about pricing?"))
+    assert update["retrieval_query"] == "what about pricing?"
 
 
-def test_rewrite_query_cleans_quotes_and_whitespace(monkeypatch):
-    monkeypatch.setattr(grader, "invoke_with_retry", lambda chain, inputs: '  "NexaAI pricing plans"  \n')
-    assert rewrite_query("pricing?") == "NexaAI pricing plans"
+def test_rewrite_question_cleans_quotes_and_whitespace(monkeypatch):
+    monkeypatch.setattr(rewrite_module, "invoke_with_retry", lambda chain, inputs: '  "NexaAI pricing plans"  \n')
+    assert rewrite_question(state(question="pricing?"))["retrieval_query"] == "NexaAI pricing plans"
 
 
-def test_rewrite_query_empty_output_returns_original(monkeypatch):
-    monkeypatch.setattr(grader, "invoke_with_retry", lambda chain, inputs: "   ")
-    assert rewrite_query("pricing?") == "pricing?"
-
-
-@pytest.mark.integration
-def test_rewrite_query_keeps_key_entities():
-    rewritten = rewrite_query(Q_PRICE)
-    assert "growth" in rewritten.lower()
+def test_rewrite_question_empty_output_returns_original(monkeypatch):
+    monkeypatch.setattr(rewrite_module, "invoke_with_retry", lambda chain, inputs: "   ")
+    assert rewrite_question(state(question="pricing?"))["retrieval_query"] == "pricing?"
 
 
 @pytest.mark.integration
-def test_rewrite_query_does_not_invent_plan_names():
-    rewritten = rewrite_query("what about the pricing thing for teams?")
-    assert "team plan" not in rewritten.lower()
+def test_rewrite_question_keeps_key_entities():
+    update = rewrite_question(state(question=Q_PRICE, retrieval_query=Q_PRICE))
+    assert "growth" in update["retrieval_query"].lower()
 
 
 @pytest.mark.integration
-def test_rewrite_query_with_previous_query_changes_wording():
+def test_rewrite_question_does_not_invent_plan_names():
     question = "what about the pricing thing for teams?"
-    first = rewrite_query(question)
-    second = rewrite_query(question, previous_query=first)
+    update = rewrite_question(state(question=question, retrieval_query=question))
+    assert "team plan" not in update["retrieval_query"].lower()
+
+
+@pytest.mark.integration
+def test_rewrite_question_with_previous_query_changes_wording():
+    question = "what about the pricing thing for teams?"
+    first = rewrite_question(state(question=question, retrieval_query=question))["retrieval_query"]
+    second = rewrite_question(state(question=question, retrieval_query=first))["retrieval_query"]
     assert second.strip().lower() != first.strip().lower()

@@ -1,9 +1,9 @@
 import logging
 import time
 
-from selfrag.loader import chunk_docs, load_docs
-from selfrag.logging_setup import setup_logging
-from selfrag.vectorstore import get_vectorstore
+from selfrag.rag.loader import chunk_docs, load_docs
+from selfrag.core.logging import setup_logging
+from selfrag.rag.vectorstore import get_vectorstore
 
 logger = logging.getLogger(__name__)
 

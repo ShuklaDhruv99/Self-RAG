@@ -1,7 +1,7 @@
 """Check that Postgres is reachable and pgvector is enabled."""
 
 import psycopg
-from selfrag.config import settings
+from selfrag.core.config import settings
 
 
 def main():

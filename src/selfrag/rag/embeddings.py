@@ -1,8 +1,8 @@
 import logging
 from functools import lru_cache
 
-from selfrag.config import settings
-from selfrag.logging_setup import setup_logging
+from selfrag.core.config import settings
+from selfrag.core.logging import setup_logging
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 logger = logging.getLogger(__name__)

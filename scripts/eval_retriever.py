@@ -1,4 +1,4 @@
-from selfrag.retriever import get_retriever
+from selfrag.rag.retriever import get_retriever
 import json
 from pathlib import Path
 

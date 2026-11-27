@@ -12,7 +12,7 @@ from tenacity import (
     wait_random_exponential,
 )
 
-from selfrag.config import settings
+from selfrag.core.config import settings
 
 logger = logging.getLogger(__name__)
 

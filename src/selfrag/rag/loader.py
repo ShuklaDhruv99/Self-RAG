@@ -1,7 +1,7 @@
 import logging
 
-from selfrag.config import settings
-from selfrag.logging_setup import setup_logging
+from selfrag.core.config import settings
+from selfrag.core.logging import setup_logging
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document

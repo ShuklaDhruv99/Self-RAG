@@ -1,9 +1,9 @@
 import logging
 
 from langchain_postgres import PGVector
-from selfrag.config import settings
-from selfrag.embeddings import get_embeddings
-from selfrag.logging_setup import setup_logging
+from selfrag.core.config import settings
+from selfrag.rag.embeddings import get_embeddings
+from selfrag.core.logging import setup_logging
 
 logger = logging.getLogger(__name__)
 

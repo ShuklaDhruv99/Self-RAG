@@ -6,10 +6,10 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-from selfrag.config import settings
-from selfrag.logging_setup import setup_logging
-from selfrag.retriever import get_retriever
-from selfrag.llm import get_llm, invoke_with_retry
+from selfrag.core.config import settings
+from selfrag.core.logging import setup_logging
+from selfrag.rag.retriever import get_retriever
+from selfrag.bot.llm import get_llm, invoke_with_retry
 
 logger = logging.getLogger(__name__)
 

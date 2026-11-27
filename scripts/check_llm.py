@@ -1,7 +1,7 @@
 """Check that LLM calls work."""
 
 from langchain_google_genai import ChatGoogleGenerativeAI
-from selfrag.config import settings
+from selfrag.core.config import settings
 
 def main():
     llm = ChatGoogleGenerativeAI(model=settings.gemini_model, google_api_key=settings.google_api_key, timeout=20, max_retries=2)
